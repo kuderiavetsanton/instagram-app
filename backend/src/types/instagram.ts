@@ -12,6 +12,34 @@ export interface IGParticipant {
   profile_picture_url?: string;
 }
 
+export interface IGAttachment {
+  id: string;
+  mime_type: string;
+  name?: string;
+  size?: number;
+  video_data?: {
+    width: number;
+    height: number;
+    url: string;
+    preview_url?: string;
+  };
+  image_data?: {
+    width: number;
+    height: number;
+    url: string;
+    preview_url?: string;
+    max_width?: number;
+    max_height?: number;
+  };
+  file_url?: string;
+}
+
+export interface IGShare {
+  link?: string;
+  name?: string;
+  description?: string;
+}
+
 export interface IGMessage {
   id: string;
   created_time: string;
@@ -28,6 +56,12 @@ export interface IGMessage {
     }>;
   };
   message?: string;
+  attachments?: {
+    data: IGAttachment[];
+  };
+  shares?: {
+    data: IGShare[];
+  };
 }
 
 export interface IGConversation {
@@ -60,6 +94,24 @@ export interface ConversationListItem {
   otherParticipant?: IGParticipant; // The other person in the conversation
 }
 
+export interface Attachment {
+  id: string;
+  mimeType: string;
+  name?: string;
+  size?: number;
+  url?: string;
+  previewUrl?: string;
+  width?: number;
+  height?: number;
+  type: 'image' | 'video' | 'file';
+}
+
+export interface Share {
+  link?: string;
+  name?: string;
+  description?: string;
+}
+
 export interface MessageDetails {
   id: string;
   createdTime: string;
@@ -69,6 +121,8 @@ export interface MessageDetails {
     name?: string;
   };
   message?: string;
+  attachments?: Attachment[];
+  shares?: Share[];
 }
 
 // Safe pagination info to send to client (excludes URLs with access tokens)

@@ -4,9 +4,11 @@ import {
   IGUser,
   IGConversation,
   IGMessage,
+  IGAttachment,
   GraphAPIResponse,
   ConversationListItem,
   PaginatedMessages,
+  Attachment,
 } from '../types/instagram';
 
 interface MessagesResponse {
@@ -95,7 +97,7 @@ class InstagramService {
     // Fetch messages using /{conversationId}/messages endpoint
     // Messages are returned newest first, so 'after' cursor gets older messages
     const params: Record<string, string | number> = {
-      fields: 'id,created_time,from,to,message',
+      fields: 'id,created_time,from,to,message,attachments{id,mime_type,name,size,video_data,image_data,file_url},shares{link,name,description}',
       limit,
     };
 
@@ -111,12 +113,55 @@ class InstagramService {
 
     const messageItems = response.data.data || [];
 
+    // Helper to map attachment data
+    const mapAttachment = (att: IGAttachment): Attachment => {
+      let type: 'image' | 'video' | 'file' = 'file';
+      let url: string | undefined;
+      let previewUrl: string | undefined;
+      let width: number | undefined;
+      let height: number | undefined;
+
+      if (att.image_data) {
+        type = 'image';
+        url = att.image_data.url;
+        previewUrl = att.image_data.preview_url;
+        width = att.image_data.width;
+        height = att.image_data.height;
+      } else if (att.video_data) {
+        type = 'video';
+        url = att.video_data.url;
+        previewUrl = att.video_data.preview_url;
+        width = att.video_data.width;
+        height = att.video_data.height;
+      } else if (att.file_url) {
+        url = att.file_url;
+      }
+
+      return {
+        id: att.id,
+        mimeType: att.mime_type,
+        name: att.name,
+        size: att.size,
+        url,
+        previewUrl,
+        width,
+        height,
+        type,
+      };
+    };
+
     // Map message data
     const messages = messageItems.map((msg: IGMessage) => ({
       id: msg.id,
       createdTime: msg.created_time,
       from: msg.from,
       message: msg.message,
+      attachments: msg.attachments?.data?.map(mapAttachment),
+      shares: msg.shares?.data?.map((share) => ({
+        link: share.link,
+        name: share.name,
+        description: share.description,
+      })),
     }));
 
     // Create safe paging info (without URLs that contain access tokens)

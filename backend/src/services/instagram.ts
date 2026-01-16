@@ -10,16 +10,14 @@ import {
 } from '../types/instagram';
 
 interface MessagesResponse {
-  messages: {
-    data: IGMessage[];
-    paging?: {
-      cursors?: {
-        before: string;
-        after: string;
-      };
-      next?: string;
-      previous?: string;
+  data: IGMessage[];
+  paging?: {
+    cursors?: {
+      before: string;
+      after: string;
     };
+    next?: string;
+    previous?: string;
   };
 }
 
@@ -91,24 +89,27 @@ class InstagramService {
   async getMessages(
     conversationId: string,
     cursor?: string,
+    direction: 'before' | 'after' = 'after',
     limit: number = 20
   ): Promise<PaginatedMessages> {
-    // Fetch messages with pagination
+    // Fetch messages using /{conversationId}/messages endpoint
+    // Messages are returned newest first, so 'after' cursor gets older messages
     const params: Record<string, string | number> = {
-      fields: 'messages.limit(' + limit + '){id,created_time,from,to,message}',
+      fields: 'id,created_time,from,to,message',
+      limit,
     };
 
     if (cursor) {
-      params['messages.after'] = cursor;
+      // Use the cursor for pagination
+      params[direction] = cursor;
     }
 
-    const convResponse = await this.api.get<MessagesResponse>(
-      `/${conversationId}`,
+    const response = await this.api.get<MessagesResponse>(
+      `/${conversationId}/messages`,
       { params }
     );
 
-    const messagesData = convResponse.data.messages;
-    const messageItems = messagesData?.data || [];
+    const messageItems = response.data.data || [];
 
     // Map message data
     const messages = messageItems.map((msg: IGMessage) => ({
@@ -118,9 +119,18 @@ class InstagramService {
       message: msg.message,
     }));
 
+    // Create safe paging info (without URLs that contain access tokens)
+    // Note: Messages are returned newest first, so 'after' cursor gets older messages
+    const rawPaging = response.data.paging;
+    const hasMore = Boolean(rawPaging?.next || rawPaging?.cursors?.after);
+
     return {
       messages,
-      paging: messagesData?.paging,
+      paging: {
+        hasMore,
+        before: rawPaging?.cursors?.before,
+        after: rawPaging?.cursors?.after,
+      },
     };
   }
 }

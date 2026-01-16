@@ -71,14 +71,14 @@ export interface MessageDetails {
   message?: string;
 }
 
+// Safe pagination info to send to client (excludes URLs with access tokens)
+export interface SafePaging {
+  hasMore: boolean;
+  before?: string;
+  after?: string;
+}
+
 export interface PaginatedMessages {
   messages: MessageDetails[];
-  paging?: {
-    cursors?: {
-      before: string;
-      after: string;
-    };
-    next?: string;
-    previous?: string;
-  };
+  paging: SafePaging;
 }

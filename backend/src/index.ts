@@ -2,7 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config';
 import conversationsRouter from './routes/conversations';
+import webhookRouter from './routes/webhook';
 import { instagramService } from './services/instagram';
+import { redisService } from './services/redis';
 
 const app = express();
 
@@ -12,6 +14,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/conversations', conversationsRouter);
+app.use('/api/webhook/instagram', webhookRouter);
 
 // Health check / account info endpoint
 app.get('/api/me', async (_req, res) => {
@@ -35,7 +38,16 @@ app.get('/api/me', async (_req, res) => {
 app.listen(config.port, () => {
   console.log(`Server running on http://localhost:${config.port}`);
   console.log('Available endpoints:');
-  console.log(`  GET /api/me - Account info`);
-  console.log(`  GET /api/conversations - List conversations`);
-  console.log(`  GET /api/conversations/:id/messages - Get messages`);
+  console.log(`  GET  /api/me - Account info`);
+  console.log(`  GET  /api/conversations - List conversations`);
+  console.log(`  GET  /api/conversations/:id/messages - Get messages`);
+  console.log(`  GET  /api/webhook/instagram - Webhook verification`);
+  console.log(`  POST /api/webhook/instagram - Webhook events`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down...');
+  await redisService.disconnect();
+  process.exit(0);
 });

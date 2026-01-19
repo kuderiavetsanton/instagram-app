@@ -136,3 +136,37 @@ export interface PaginatedMessages {
   messages: MessageDetails[];
   paging: SafePaging;
 }
+
+// Cache message format - compact for Redis storage
+export interface CachedMessage {
+  r: 'u' | 'b'; // role: 'u' = user, 'b' = business
+  t: string;    // text content
+  ts: number;   // timestamp (unix ms)
+}
+
+// Webhook payload types from Instagram
+export interface WebhookEntry {
+  id: string;
+  time: number;
+  messaging: WebhookMessaging[];
+}
+
+export interface WebhookMessaging {
+  sender: { id: string };
+  recipient: { id: string };
+  timestamp: number;
+  message?: {
+    mid: string;
+    text?: string;
+    is_echo?: boolean;
+    attachments?: Array<{
+      type: string;
+      payload: { url: string };
+    }>;
+  };
+}
+
+export interface WebhookPayload {
+  object: string;
+  entry: WebhookEntry[];
+}
